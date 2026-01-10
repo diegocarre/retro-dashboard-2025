@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Ignorar archivos de secretos de Streamlit
+.streamlit/secrets.toml
+.streamlit/
+secrets.toml
+
+# Ignorar archivos temporales de Python
+__pycache__/
+*.pyc
