@@ -206,11 +206,11 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Ignorar secretos
+# Ignorar archivos de secretos de Streamlit
 .streamlit/secrets.toml
 .streamlit/
 secrets.toml
 
-# Ignorar python
+# Ignorar archivos temporales de Python
 __pycache__/
 *.pyc
