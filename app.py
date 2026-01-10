@@ -19,12 +19,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. TUS DATOS DEL SHEET (Preservados) ---
-sheet_id = "1mi4jrEZ-mYxmFL-pshxKrMSWLTDkOdFyt9Y7ni41NTE" 
-gid = "868100695" # <--- Tu GID correcto extraído de tu código
-
-# URL de exportación CSV
-csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+# --- 2. TUS DATOS DEL SHEET (Protegidos) ---
+# En lugar de escribirlo aquí, lo leemos de los secretos
+try:
+    sheet_id = st.secrets["SHEET_ID"]
+    gid = st.secrets["GID"]
+except:
+    st.error("Faltan configurar los IDs en secrets.toml")
+    st.stop()
 
 # --- 3. CONEXIÓN CON IA ---
 try:
