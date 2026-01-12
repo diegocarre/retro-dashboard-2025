@@ -6,9 +6,8 @@ import streamlit.components.v1 as components
 
 # --- 1. CONFIGURACIÓN VISUAL (LOOK & FEEL CARREFOUR) ---
 LOGO_URL = "https://images.seeklogo.com/logo-png/27/1/carrefour-logo-png_seeklogo-273111.png"
-
-# 👇 ¡PEGA AQUÍ TU LINK DEL GOOGLE FORM! 👇
-FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdyeooOkyLX3rF1i_M29pggDz1YMSqhnlZ9FQbRVhyZLnYtxQ/viewform" 
+# 👇 RECUERDA PONER TU LINK DEL FORMULARIO AQUÍ
+FORM_URL = "https://forms.gle/TU_FORMULARIO_AQUI" 
 
 st.set_page_config(
     page_title="Dashboard Innovación 2026",
@@ -65,7 +64,6 @@ st.divider()
 # --- 5. SECCIÓN DE ACTIVIDAD (TIMER + MÚSICA + QR) ---
 st.subheader("⏱️ Actividad: Llenado de Formulario")
 
-# Dividimos en 3 columnas: Controles (1) | Reloj (2) | QR (1)
 col_controls, col_timer, col_qr = st.columns([1, 2, 1])
 
 # --- COLUMNA 1: CONTROLES ---
@@ -80,19 +78,18 @@ with col_controls:
     stop_placeholder = st.empty()
     music_placeholder = st.empty()
 
-# --- COLUMNA 3: QR (Lo definimos antes para que esté estático) ---
+# --- COLUMNA 3: QR ---
 with col_qr:
     st.info("📱 **Escanea para opinar:**")
-    # Usamos una API segura para generar el QR sin instalar librerías
     qr_api_url = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={FORM_URL}&color=003896"
     st.image(qr_api_url, width=200)
 
-# --- COLUMNA 2: RELOJ (Lógica Dinámica) ---
+# --- COLUMNA 2: RELOJ ---
 with col_timer:
     timer_placeholder = st.empty()
     
     if start_button:
-        # 1. INCRUSTAR SOUNDCLOUD
+        # Música (Thunderstruck)
         soundcloud_iframe = """
         <iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
         src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/105085838&color=%23003896&auto_play=true&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=true"></iframe>
@@ -100,7 +97,7 @@ with col_timer:
         with col_controls:
             music_placeholder.markdown(soundcloud_iframe, unsafe_allow_html=True)
 
-        # 2. LÓGICA DEL RELOJ
+        # Lógica Reloj
         total_secs = minutes * 60
         stop_clicked = False
 
@@ -129,18 +126,7 @@ with col_timer:
             st.rerun()
         else:
             timer_placeholder.markdown(
-                """
-                <div style="
-                    background-color: #e01e37; 
-                    padding: 20px; 
-                    border-radius: 10px; 
-                    text-align: center; 
-                    margin-top: 20px;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                    <h1 style="color: white; margin: 0; font-size: 45px;">🛑 ¡TIEMPO FINALIZADO!</h1>
-                    <p style="color: white; margin-top: 5px;">Por favor, envíen sus respuestas.</p>
-                </div>
-                """, 
+                "<div style='background-color: #e01e37; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px;'><h1 style='color: white; margin: 0;'>🛑 ¡TIEMPO FINALIZADO!</h1></div>", 
                 unsafe_allow_html=True
             )
             stop_placeholder.empty()
@@ -162,6 +148,7 @@ try:
     else:
         df.columns = ["Fecha", "Categoria", "Comentario"]
         
+        # --- A. MÉTRICAS ---
         c1, c2, c3 = st.columns(3)
         total = len(df)
         keeps = len(df[df['Categoria'].str.contains("KEEP", case=False, na=False)])
@@ -171,10 +158,30 @@ try:
         c2.metric("🟢 Keep (Mantener)", keeps, border=True)
         c3.metric("🔴 Change/Stop", others, delta_color="inverse", border=True)
 
-        st.write("---") 
+        st.write("---")
+
+        # --- B. GRÁFICOS Y FILTROS (NUEVO) ---
+        col_grafico, col_filtro = st.columns([2, 1])
+        
+        with col_grafico:
+            st.caption("Distribución por Categoría")
+            # Contamos cuántos hay de cada tipo
+            conteo_categorias = df["Categoria"].value_counts()
+            st.bar_chart(conteo_categorias, color="#003896") # Azul Carrefour
+            
+        with col_filtro:
+            st.caption("🔍 Filtrar Tabla")
+            # Obtenemos las categorías únicas
+            categorias_unicas = df["Categoria"].unique()
+            filtro = st.multiselect("Selecciona Categoría:", options=categorias_unicas, default=categorias_unicas)
+            
+            # Filtramos el DataFrame según la selección
+            df_filtrado = df[df["Categoria"].isin(filtro)]
+
+        # --- C. TABLA DETALLADA ---
         st.subheader("📥 Detalles del Feedback")
         st.dataframe(
-            df.tail(10), 
+            df_filtrado.tail(10), # Mostramos el filtrado, no el original
             use_container_width=True, 
             hide_index=True,
             column_config={
@@ -185,44 +192,33 @@ try:
         )
 
         st.divider()
+        
+        # --- D. CEREBRO IA (PMO) ---
         st.subheader("🧠 Análisis Gerencial (PMO)")
         
         if st.button("✨ Generar Reporte Ejecutivo", type="primary"):
             with st.spinner("Consultando Guía de Ciclo de Vida y analizando..."):
                 txt = ""
-                for i, row in df.iterrows():
+                # Le enviamos a la IA solo lo que está filtrado (para análisis específicos) o todo si no hay filtro
+                data_para_ia = df_filtrado if not df_filtrado.empty else df
+                
+                for i, row in data_para_ia.iterrows():
                     txt += f"- [{row['Categoria']}] {row['Comentario']}\n"
                 
                 prompt = """
-                Actúa como un Experto en Oficina de Proyectos (PMO) y Calidad.
-                Analiza los siguientes comentarios de la retrospectiva anual del equipo de Innovación.
-                
-                CONTEXTO:
-                El equipo NO usa Agile puro. Usamos un Ciclo de Vida de 8 Fases estandarizado. 
-                Usa estas definiciones para clasificar los problemas:
-                
-                1. GÉNESIS: Triage, ideas, urgencia y carga de trabajo inicial.
-                2. ANÁLISIS: Definición de alcance, Sponsor/Product Owner y viabilidad técnica.
-                3. PROTOTIPADO: Validación de concepto, MVP y Business Case.
-                4. APROBACIÓN: Comités (CIP), CAPEX y decisión Go/No-Go.
-                5. DESARROLLO: Ejecución, Vendors y gestión de recursos.
-                6. PRUEBAS: QA y Aprobación de Seguridad Informática.
-                7. DESPLIEGUE: Go Live y puesta en producción.
-                8. SOPORTE: Traspaso a Mesa de Ayuda (MDA) y OPEX.
-                
-                INSTRUCCIONES DE REPORTE (Formato Markdown):
-                1. 🌡️ **Termómetro Emocional** (1 frase resumen).
-                2. 🏆 **Puntos Fuertes** (Top 2 temas en KEEP). Indica qué fase del ciclo está funcionando bien.
-                3. ⚠️ **Cuellos de Botella** (Análisis de CHANGE/STOP). Asocia cada dolor a una de las 8 Fases.
-                4. 💡 **Recomendación de Gestión**: Una acción directiva basada en la Guía de Ciclo de Vida.
-                
-                COMENTARIOS DEL EQUIPO:
+                Actúa como un Experto en Oficina de Proyectos (PMO). Analiza los comentarios.
+                CONTEXTO: Ciclo de Vida de 8 Fases (Génesis a Soporte).
+                INSTRUCCIONES:
+                1. 🌡️ Termómetro Emocional.
+                2. 🏆 Puntos Fuertes (Fases que funcionan).
+                3. ⚠️ Cuellos de Botella (Asociados a fases).
+                4. 💡 Recomendación Directiva.
+                COMENTARIOS:
                 """
-                
                 model = genai.GenerativeModel('gemini-2.5-pro')
                 response = model.generate_content(prompt + txt)
                 st.markdown(response.text)
 
 except Exception as e:
-    st.error("Error leyendo el Google Sheet o procesando datos.")
+    st.error("Error leyendo el Google Sheet.")
     st.text(f"Detalle técnico: {e}")
